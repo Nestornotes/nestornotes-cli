@@ -7,8 +7,8 @@ name: Release
 # One-time setup:
 #   1. Register `nestornotes` on PyPI with a Trusted Publisher pointing at
 #      this repo + this workflow + the `release` environment.
-#   2. Add an `NPM_TOKEN` repo secret (npm "Automation" token with publish
-#      perms for the `nestornotes` package).
+#   2. Register `nestornotes` on npm with a Trusted Publisher pointing at
+#      this repo + workflow file `release.yml`. No token needed (OIDC).
 
 on:
   push:
@@ -72,15 +72,17 @@ jobs:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
 
+      - name: Upgrade npm for Trusted Publishing (OIDC)
+        # setup-node ships npm 10.x with Node 20; Trusted Publishing needs >= 11.5.1.
+        run: npm install -g npm@latest
+
       - name: Sync npm package version with pyproject
         working-directory: npm
         run: npm version --no-git-tag-version --allow-same-version "${VERSION}"
 
-      - name: Publish to npm
+      - name: Publish to npm (Trusted Publishing)
         working-directory: npm
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --access public
+        run: npm publish --access public --provenance
 
       - name: Create GitHub Release
         env:
