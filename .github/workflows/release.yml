@@ -1,0 +1,92 @@
+name: Release
+
+# Triggered by pushing a tag like `v0.2.0`. Publishes the Python wheel to
+# PyPI (Trusted Publishing — no token), syncs the npm wrapper to the same
+# version + publishes it, and creates a GitHub Release with auto-notes.
+#
+# One-time setup:
+#   1. Register `nestornotes` on PyPI with a Trusted Publisher pointing at
+#      this repo + this workflow + the `release` environment.
+#   2. Add an `NPM_TOKEN` repo secret (npm "Automation" token with publish
+#      perms for the `nestornotes` package).
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write    # for `gh release create`
+  id-token: write    # for PyPI Trusted Publishing (OIDC)
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: release
+      url: https://pypi.org/project/nestornotes/
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag matches pyproject version
+        run: |
+          set -euo pipefail
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PYPROJECT_VERSION=$(python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+          if [[ "$TAG_VERSION" != "$PYPROJECT_VERSION" ]]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match pyproject version $PYPROJECT_VERSION"
+            exit 1
+          fi
+          echo "VERSION=$TAG_VERSION" >> "$GITHUB_ENV"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Build wheel + sdist
+        run: |
+          uv python install 3.12
+          uv build
+
+      - name: Inspect wheel contents
+        run: |
+          set -euo pipefail
+          unzip -l dist/nestornotes-*-py3-none-any.whl
+          # The CLI wheel must contain exactly 3 source files. More than that
+          # is a sign that the upstream sync injected something it shouldn't.
+          FILE_COUNT=$(unzip -l dist/nestornotes-*-py3-none-any.whl | grep -E "nestornotes/[^/]+$" | wc -l | tr -d ' ')
+          if [[ "$FILE_COUNT" != "3" ]]; then
+            echo "::error::expected 3 source files in wheel, got $FILE_COUNT"
+            exit 1
+          fi
+
+      - name: Publish to PyPI (Trusted Publishing)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Sync npm package version with pyproject
+        working-directory: npm
+        run: npm version --no-git-tag-version --allow-same-version "${VERSION}"
+
+      - name: Publish to npm
+        working-directory: npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            dist/*

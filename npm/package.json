@@ -1,0 +1,32 @@
+{
+  "name": "nestornotes",
+  "version": "0.1.0",
+  "description": "Command-line client for the NestorNotes knowledge base. Thin wrapper around the Python `nestornotes` CLI on PyPI; runs it via `uvx`.",
+  "keywords": [
+    "nestornotes",
+    "mcp",
+    "fastmcp",
+    "cli",
+    "knowledge-base"
+  ],
+  "homepage": "https://nestornotes.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nestornotes/nestornotes-cli.git",
+    "directory": "npm"
+  },
+  "bugs": {
+    "url": "https://github.com/nestornotes/nestornotes-cli/issues"
+  },
+  "license": "MIT",
+  "bin": {
+    "nestornotes": "bin/nestornotes.js"
+  },
+  "files": [
+    "bin/nestornotes.js",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}
