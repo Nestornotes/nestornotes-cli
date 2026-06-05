@@ -12,11 +12,11 @@
   "homepage": "https://nestornotes.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nestornotes/nestornotes-cli.git",
+    "url": "git+https://github.com/Nestornotes/nestornotes-cli.git",
     "directory": "npm"
   },
   "bugs": {
-    "url": "https://github.com/nestornotes/nestornotes-cli/issues"
+    "url": "https://github.com/Nestornotes/nestornotes-cli/issues"
   },
   "license": "MIT",
   "bin": {
