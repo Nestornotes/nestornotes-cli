@@ -1,6 +1,6 @@
 [project]
 name = "nestornotes"
-version = "0.1.1"
+version = "0.2.0"
 description = "Open-source command-line client for the NestorNotes knowledge base. Auditable thin wrapper around the hosted MCP server."
 readme = "README.md"
 license = { text = "MIT" }
