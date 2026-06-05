@@ -314,6 +314,102 @@ nestornotes call-tool count_knowledge_items --collection-id <value> --object-typ
 | `--created-after` | string | no | ISO 8601 timestamp lower bound. (JSON string) |
 | `--created-before` | string | no | ISO 8601 timestamp upper bound. (JSON string) |
 
+### list_linkedin_subscriptions
+
+List LinkedIn company-page subscriptions for the authenticated user.
+
+Returns the user's subscribed LinkedIn organizations with embedded org details
+(name, vanity_name, logo_url, follower_count) and the current subscription
+`status` (`'pending'`, `'active'`, or `'failed'`).
+Results are scoped to the authenticated user via RLS.
+
+```bash
+nestornotes call-tool list_linkedin_subscriptions --collection-id <value> --created-after <value> --created-before <value>
+```
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--collection-id` | string | no | Optional collection UUID to scope results. (JSON string) |
+| `--created-after` | string | no | ISO 8601 timestamp lower bound on subscription creation. (JSON string) |
+| `--created-before` | string | no | ISO 8601 timestamp upper bound on subscription creation. (JSON string) |
+
+### list_linkedin_posts
+
+List recent posts from a LinkedIn organization the user is subscribed to.
+
+Posts are ordered by `posted_at` (newest first).
+
+```bash
+nestornotes call-tool list_linkedin_posts --organization-id <value> --posted-after <value> --posted-before <value> --limit <value>
+```
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--organization-id` | string | yes | The internal linkedin_organization UUID (from `list_linkedin_subscriptions`). |
+| `--posted-after` | string | no | ISO 8601 timestamp lower bound on LinkedIn publication date. (JSON string) |
+| `--posted-before` | string | no | ISO 8601 timestamp upper bound on LinkedIn publication date. (JSON string) |
+| `--limit` | integer | no | Max results (default 20, max 100). |
+
+### get_linkedin_post
+
+Get a single LinkedIn post by UUID.
+
+```bash
+nestornotes call-tool get_linkedin_post --linkedin-post-id <value>
+```
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--linkedin-post-id` | string | yes | The internal linkedin_post UUID. |
+
+### get_linkedin_post_summary
+
+Get the AI-generated summary for a LinkedIn post.
+
+```bash
+nestornotes call-tool get_linkedin_post_summary --linkedin-post-id <value>
+```
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--linkedin-post-id` | string | yes | The internal linkedin_post UUID. |
+
+### subscribe_to_linkedin_company
+
+Subscribe the user to a LinkedIn company page.
+
+The subscription starts in `'pending'` status; Apify fetches the company's
+metadata and most recent posts (typically <2 minutes), then it flips to
+`'active'`. Poll `list_linkedin_subscriptions` to observe the status change.
+
+Personal profiles (`/in/`), school pages (`/school/`), and showcase pages
+(`/showcase/`) are not supported in v1; the URL must match `/company/<slug>/`.
+
+```bash
+nestornotes call-tool subscribe_to_linkedin_company --linkedin-url <value> --collection-id <value>
+```
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--linkedin-url` | string | yes | The company's LinkedIn URL, e.g. `https://www.linkedin.com/company/anthropic/`. |
+| `--collection-id` | string | yes | UUID of the collection where posts will live (use `list_collections` to discover collection IDs). |
+
+### unsubscribe_from_linkedin_company
+
+Unsubscribe the user from a LinkedIn company.
+
+Removes the user's subscription. The organization record and shared posts
+remain in place (other subscribers may still need them); only the user's
+view is detached via CASCADE.
+
+```bash
+nestornotes call-tool unsubscribe_from_linkedin_company --organization-id <value>
+```
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--organization-id` | string | yes | The internal linkedin_organization UUID (from `list_linkedin_subscriptions`). |
+
 ### list_rss_subscriptions
 
 List RSS channel subscriptions for the authenticated user.

@@ -507,6 +507,93 @@ Useful for getting totals before paginating through results.'''
     await _call_tool('count_knowledge_items', {'collection_id': collection_id_parsed, 'object_type': object_type_parsed, 'summarized': summarized_parsed, 'bookmarked': bookmarked_parsed, 'archived': archived_parsed, 'seen': seen_parsed, 'created_after': created_after_parsed, 'created_before': created_before_parsed})
 
 
+@call_tool_app.command(name='list_linkedin_subscriptions')
+async def list_linkedin_subscriptions(
+    *,
+    collection_id: Annotated[str | None, cyclopts.Parameter(help="Optional collection UUID to scope results.\\nJSON Schema: {\n                            \"anyOf\": [\n                              {\n                                \"type\": \"string\"\n                              },\n                              {\n                                \"type\": \"null\"\n                              }\n                            ],\n                            \"default\": null,\n                            \"description\": \"Optional collection UUID to scope results.\"\n                          }")] = None,
+    created_after: Annotated[str | None, cyclopts.Parameter(help="ISO 8601 timestamp lower bound on subscription creation.\\nJSON Schema: {\n                            \"anyOf\": [\n                              {\n                                \"type\": \"string\"\n                              },\n                              {\n                                \"type\": \"null\"\n                              }\n                            ],\n                            \"default\": null,\n                            \"description\": \"ISO 8601 timestamp lower bound on subscription creation.\"\n                          }")] = None,
+    created_before: Annotated[str | None, cyclopts.Parameter(help="ISO 8601 timestamp upper bound on subscription creation.\\nJSON Schema: {\n                            \"anyOf\": [\n                              {\n                                \"type\": \"string\"\n                              },\n                              {\n                                \"type\": \"null\"\n                              }\n                            ],\n                            \"default\": null,\n                            \"description\": \"ISO 8601 timestamp upper bound on subscription creation.\"\n                          }")] = None,
+) -> None:
+    '''List LinkedIn company-page subscriptions for the authenticated user.
+
+Returns the user\'s subscribed LinkedIn organizations with embedded org details
+(name, vanity_name, logo_url, follower_count) and the current subscription
+`status` (`\'pending\'`, `\'active\'`, or `\'failed\'`).
+Results are scoped to the authenticated user via RLS.'''
+    # Parse JSON parameters
+    collection_id_parsed = json.loads(collection_id) if isinstance(collection_id, str) else collection_id
+    created_after_parsed = json.loads(created_after) if isinstance(created_after, str) else created_after
+    created_before_parsed = json.loads(created_before) if isinstance(created_before, str) else created_before
+
+    await _call_tool('list_linkedin_subscriptions', {'collection_id': collection_id_parsed, 'created_after': created_after_parsed, 'created_before': created_before_parsed})
+
+
+@call_tool_app.command(name='list_linkedin_posts')
+async def list_linkedin_posts(
+    *,
+    organization_id: Annotated[str, cyclopts.Parameter(help="The internal linkedin_organization UUID (from\n`list_linkedin_subscriptions`).")],
+    posted_after: Annotated[str | None, cyclopts.Parameter(help="ISO 8601 timestamp lower bound on LinkedIn publication date.\\nJSON Schema: {\n                            \"anyOf\": [\n                              {\n                                \"type\": \"string\"\n                              },\n                              {\n                                \"type\": \"null\"\n                              }\n                            ],\n                            \"default\": null,\n                            \"description\": \"ISO 8601 timestamp lower bound on LinkedIn publication date.\"\n                          }")] = None,
+    posted_before: Annotated[str | None, cyclopts.Parameter(help="ISO 8601 timestamp upper bound on LinkedIn publication date.\\nJSON Schema: {\n                            \"anyOf\": [\n                              {\n                                \"type\": \"string\"\n                              },\n                              {\n                                \"type\": \"null\"\n                              }\n                            ],\n                            \"default\": null,\n                            \"description\": \"ISO 8601 timestamp upper bound on LinkedIn publication date.\"\n                          }")] = None,
+    limit: Annotated[int, cyclopts.Parameter(help="Max results (default 20, max 100).")] = 20,
+) -> None:
+    '''List recent posts from a LinkedIn organization the user is subscribed to.
+
+Posts are ordered by `posted_at` (newest first).'''
+    # Parse JSON parameters
+    posted_after_parsed = json.loads(posted_after) if isinstance(posted_after, str) else posted_after
+    posted_before_parsed = json.loads(posted_before) if isinstance(posted_before, str) else posted_before
+
+    await _call_tool('list_linkedin_posts', {'organization_id': organization_id, 'posted_after': posted_after_parsed, 'posted_before': posted_before_parsed, 'limit': limit})
+
+
+@call_tool_app.command(name='get_linkedin_post')
+async def get_linkedin_post(
+    *,
+    linkedin_post_id: Annotated[str, cyclopts.Parameter(help="The internal linkedin_post UUID.")],
+) -> None:
+    '''Get a single LinkedIn post by UUID.'''
+    await _call_tool('get_linkedin_post', {'linkedin_post_id': linkedin_post_id})
+
+
+@call_tool_app.command(name='get_linkedin_post_summary')
+async def get_linkedin_post_summary(
+    *,
+    linkedin_post_id: Annotated[str, cyclopts.Parameter(help="The internal linkedin_post UUID.")],
+) -> None:
+    '''Get the AI-generated summary for a LinkedIn post.'''
+    await _call_tool('get_linkedin_post_summary', {'linkedin_post_id': linkedin_post_id})
+
+
+@call_tool_app.command(name='subscribe_to_linkedin_company')
+async def subscribe_to_linkedin_company(
+    *,
+    linkedin_url: Annotated[str, cyclopts.Parameter(help="The company's LinkedIn URL, e.g.\n`https://www.linkedin.com/company/anthropic/`.")],
+    collection_id: Annotated[str, cyclopts.Parameter(help="UUID of the collection where posts will live (use\n`list_collections` to discover collection IDs).")],
+) -> None:
+    '''Subscribe the user to a LinkedIn company page.
+
+The subscription starts in `\'pending\'` status; Apify fetches the company\'s
+metadata and most recent posts (typically <2 minutes), then it flips to
+`\'active\'`. Poll `list_linkedin_subscriptions` to observe the status change.
+
+Personal profiles (`/in/`), school pages (`/school/`), and showcase pages
+(`/showcase/`) are not supported in v1; the URL must match `/company/<slug>/`.'''
+    await _call_tool('subscribe_to_linkedin_company', {'linkedin_url': linkedin_url, 'collection_id': collection_id})
+
+
+@call_tool_app.command(name='unsubscribe_from_linkedin_company')
+async def unsubscribe_from_linkedin_company(
+    *,
+    organization_id: Annotated[str, cyclopts.Parameter(help="The internal linkedin_organization UUID (from\n`list_linkedin_subscriptions`).")],
+) -> None:
+    '''Unsubscribe the user from a LinkedIn company.
+
+Removes the user\'s subscription. The organization record and shared posts
+remain in place (other subscribers may still need them); only the user\'s
+view is detached via CASCADE.'''
+    await _call_tool('unsubscribe_from_linkedin_company', {'organization_id': organization_id})
+
+
 @call_tool_app.command(name='list_rss_subscriptions')
 async def list_rss_subscriptions(
     *,

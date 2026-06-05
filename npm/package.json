@@ -1,6 +1,6 @@
 {
   "name": "nestornotes",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Command-line client for the NestorNotes knowledge base. Thin wrapper around the Python `nestornotes` CLI on PyPI; runs it via `uvx`.",
   "keywords": [
     "nestornotes",
