@@ -177,7 +177,7 @@ nestornotes call-tool list_bookmarked_items --collection-id <value> --object-typ
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
 | `--collection-id` | string | no | Optional collection UUID to scope results. (JSON string) |
-| `--object-type` | string | no | Filter by content type — one of 'article', 'incoming_emails',          'rss_item', 'youtube_item'. (JSON string) |
+| `--object-type` | string | no | Filter by content type — one of 'article', 'incoming_emails', 'rss_item', 'youtube_item', 'x_item_profile'. (JSON string) |
 | `--created-after` | string | no | ISO 8601 timestamp — only return items created after this time. (JSON string) |
 | `--created-before` | string | no | ISO 8601 timestamp — only return items created before this time. (JSON string) |
 | `--limit` | integer | no | Max results to return (default 20, max 100). |
@@ -256,7 +256,7 @@ nestornotes call-tool get_email_summary --email-id <value>
 
 ### list_knowledge_items
 
-List knowledge items (articles, emails, RSS items, YouTube videos).
+List knowledge items (articles, emails, RSS items, YouTube videos, X posts).
 
 All results are automatically scoped to the authenticated user via RLS.
 Supports filtering by collection, content type, summarization status,
@@ -269,7 +269,7 @@ nestornotes call-tool list_knowledge_items --collection-id <value> --object-type
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
 | `--collection-id` | string | no | Optional collection UUID to scope results. (JSON string) |
-| `--object-type` | string | no | Filter by content type — one of 'article', 'incoming_emails',          'rss_item', 'youtube_item'. (JSON string) |
+| `--object-type` | string | no | Filter by content type — one of 'article', 'incoming_emails', 'rss_item', 'youtube_item', 'x_item_profile'. (JSON string) |
 | `--summarized` | string | no | If set, filter by whether the item has been summarized. (JSON string) |
 | `--bookmarked` | string | no | If set, filter by bookmark status. (JSON string) |
 | `--archived` | string | no | If set, filter by archive status. (JSON string) |
@@ -463,7 +463,8 @@ nestornotes call-tool get_rss_item_summary --rss-item-id <value>
 Search user's knowledge base using semantic similarity.
 
 Uses vector embeddings to find content semantically related to the query.
-Returns content snippets with metadata (title, URL, content type).
+Returns content snippets with metadata (title, URL, content type), including
+shared RSS, YouTube, and X source documents.
 
 ```bash
 nestornotes call-tool semantic_search --query <value> --collection-id <value> --limit <value>
@@ -479,7 +480,8 @@ nestornotes call-tool semantic_search --query <value> --collection-id <value> --
 
 Search user's knowledge base using full-text keyword matching.
 
-Uses PostgreSQL full-text search for exact keyword matches with ranking.
+Uses PostgreSQL full-text search for exact keyword matches with ranking,
+including shared RSS, YouTube, and X source documents.
 
 ```bash
 nestornotes call-tool keyword_search --query <value> --collection-id <value> --limit <value> --language <value>
@@ -512,7 +514,7 @@ nestornotes call-tool get_items_by_tag --tag-name <value> --collection-id <value
 |------|------|----------|-------------|
 | `--tag-name` | string | yes | The tag name to filter by. |
 | `--collection-id` | string | no | Optional collection UUID to scope results. (JSON string) |
-| `--object-type` | string | no | Filter by content type — one of 'article', 'incoming_emails',          'rss_item', 'youtube_item'. (JSON string) |
+| `--object-type` | string | no | Filter by content type — one of 'article', 'incoming_emails', 'rss_item', 'youtube_item', 'x_item_profile'. (JSON string) |
 | `--created-after` | string | no | ISO 8601 timestamp lower bound. (JSON string) |
 | `--created-before` | string | no | ISO 8601 timestamp upper bound. (JSON string) |
 | `--limit` | integer | no | Max results (default 20, max 100). |
@@ -588,6 +590,64 @@ nestornotes call-tool get_youtube_item_summary --youtube-item-id <value>
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
 | `--youtube-item-id` | string | yes | The YouTube item UUID. |
+
+### list_x_subscriptions
+
+List X account subscriptions for the authenticated user.
+
+Returns subscriptions with embedded canonical X account details.
+Results are scoped to the authenticated user via RLS.
+
+```bash
+nestornotes call-tool list_x_subscriptions --collection-id <value> --created-after <value> --created-before <value>
+```
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--collection-id` | string | no | Optional collection UUID to scope results. (JSON string) |
+| `--created-after` | string | no | ISO 8601 timestamp — only return subscriptions created after this time. (JSON string) |
+| `--created-before` | string | no | ISO 8601 timestamp — only return subscriptions created before this time. (JSON string) |
+
+### list_x_items
+
+List recent posts and same-author threads from an X account.
+
+Items are ordered by `published_at` (newest first).
+
+```bash
+nestornotes call-tool list_x_items --account-id <value> --published-after <value> --published-before <value> --limit <value>
+```
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--account-id` | string | yes | The internal X account UUID. |
+| `--published-after` | string | no | ISO 8601 timestamp lower bound on publication date. (JSON string) |
+| `--published-before` | string | no | ISO 8601 timestamp upper bound on publication date. (JSON string) |
+| `--limit` | integer | no | Max results (default 20, max 100). |
+
+### get_x_item
+
+Get an X post/thread item.
+
+```bash
+nestornotes call-tool get_x_item --x-item-id <value>
+```
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--x-item-id` | string | yes | The X item UUID. |
+
+### get_x_item_summary
+
+Get the AI-generated summary for an X post/thread.
+
+```bash
+nestornotes call-tool get_x_item_summary --x-item-id <value>
+```
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--x-item-id` | string | yes | The X item UUID. |
 
 ## Utility Commands
 
